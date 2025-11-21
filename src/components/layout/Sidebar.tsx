@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { LayoutDashboard, BedDouble, Users, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, BedDouble, Users, TrendingUp, LogOut } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAuth } from '../../context/AuthContext';
 
@@ -11,13 +11,13 @@ export function Sidebar() {
         { icon: LayoutDashboard, label: '대시보드', to: '/' },
         { icon: BedDouble, label: '방 관리', to: '/rooms' },
         { icon: Users, label: '입실자 관리', to: '/residents' },
-        { icon: Settings, label: '설정', to: '/settings' },
+        { icon: TrendingUp, label: '재무 현황', to: '/finance' },
     ];
 
     return (
         <div className="h-screen w-64 bg-slate-900 text-white flex flex-col border-r border-slate-800">
             <div className="p-6">
-                <h1 className="text-xl font-bold tracking-tight">Goshiwon Manager</h1>
+                <h1 className="text-xl font-bold tracking-tight">Room Manager</h1>
                 <p className="text-xs text-slate-400 mt-1">Enterprise Edition</p>
             </div>
 

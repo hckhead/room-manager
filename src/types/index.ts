@@ -54,6 +54,31 @@ export interface Contract {
 
 // Combined type for Dashboard display
 export interface RoomWithContract extends Room {
-    currentContract?: Contract;
     resident?: Resident;
+    currentContract?: Contract;
+}
+
+export interface Payment {
+    id: string;
+    contractId: string;
+    residentId: string;
+    roomId: string;
+    month: string; // Format: "2024-11"
+    amount: number; // Expected amount (rent + management fee)
+    paidAmount: number; // Actual amount paid
+    paidDate: string | null; // Date payment was received
+    status: 'PAID' | 'UNPAID' | 'PARTIAL' | 'OVERDUE';
+    memo: string;
+    createdAt: string;
+}
+
+export interface Expense {
+    id: string;
+    category: 'UTILITY' | 'MAINTENANCE' | 'REPAIR' | 'OTHER';
+    subcategory: string; // e.g., "전기", "수도", "가스", "수리"
+    amount: number;
+    date: string;
+    description: string;
+    memo: string;
+    createdAt: string;
 }

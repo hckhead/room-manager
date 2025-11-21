@@ -2,16 +2,19 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { RoomCanvas } from '../components/canvas/RoomCanvas';
 import { db } from '../services/db';
-import type { RoomWithContract } from '../types';
+import { type RoomWithContract } from '../types';
 import { Layout, Save, Plus } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { RoomDetailSheet } from '../components/room/RoomDetailSheet';
 
 export default function Dashboard() {
     const { user } = useAuth();
     const [rooms, setRooms] = useState<RoomWithContract[]>([]);
+    const [filteredRooms, setFilteredRooms] = useState<RoomWithContract[]>([]);
+    const [selectedFloor, setSelectedFloor] = useState<string>('ALL');
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<RoomWithContract | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -41,6 +44,18 @@ export default function Dashboard() {
         setRooms(enrichedRooms);
     };
 
+    // Filter rooms by floor whenever rooms or selectedFloor changes
+    useEffect(() => {
+        if (selectedFloor === 'ALL') {
+            setFilteredRooms(rooms);
+        } else {
+            setFilteredRooms(rooms.filter(r => r.floor === Number(selectedFloor)));
+        }
+    }, [rooms, selectedFloor]);
+
+    // Get unique floors for filter dropdown
+    const uniqueFloors = Array.from(new Set(rooms.map(r => r.floor))).sort((a, b) => a - b);
+
     const handleRoomsChange = (newRooms: RoomWithContract[]) => {
         setRooms(newRooms);
     };
@@ -51,6 +66,24 @@ export default function Dashboard() {
         setIsSheetOpen(true);
     };
 
+    const handleAddRoom = () => {
+        if (!user) return;
+
+        // Create a new room with default values
+        db.rooms.create({
+            ownerId: user.id,
+            number: `${300 + rooms.length}`, // Simple numbering
+            floor: 3,
+            type: 'WINDOW',
+            status: 'VACANT',
+            basePrice: 350000,
+            x: 20, // Default position
+            y: 20,
+        });
+
+        loadData(); // Refresh the room list
+    };
+
     return (
         <AppLayout>
             <div className="flex flex-col space-y-6">
@@ -59,14 +92,27 @@ export default function Dashboard() {
                     <div className="flex items-center gap-4">
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900">방 현황판</h1>
                         <div className="flex gap-2">
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">입실중 {rooms.filter(r => r.status === 'OCCUPIED').length}</Badge>
-                            <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">공실 {rooms.filter(r => r.status === 'VACANT').length}</Badge>
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">입실중 {filteredRooms.filter(r => r.status === 'OCCUPIED').length}</Badge>
+                            <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">공실 {filteredRooms.filter(r => r.status === 'VACANT').length}</Badge>
                         </div>
+                        <Select value={selectedFloor} onValueChange={setSelectedFloor}>
+                            <SelectTrigger className="w-[120px]">
+                                <SelectValue placeholder="층 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ALL">전체 층</SelectItem>
+                                {uniqueFloors.map(floor => (
+                                    <SelectItem key={floor} value={String(floor)}>
+                                        {floor}층
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="flex items-center gap-2">
                         {isEditMode && (
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={handleAddRoom}>
                                 <Plus className="w-4 h-4 mr-2" />
                                 방 추가
                             </Button>
@@ -93,16 +139,18 @@ export default function Dashboard() {
 
                 {/* Canvas */}
                 <RoomCanvas
-                    rooms={rooms}
+                    rooms={filteredRooms}
                     onRoomsChange={handleRoomsChange}
                     isEditMode={isEditMode}
                     onRoomClick={handleRoomClick}
+                    selectedFloor={selectedFloor}
                 />
 
                 <RoomDetailSheet
                     room={selectedRoom}
                     open={isSheetOpen}
                     onOpenChange={setIsSheetOpen}
+                    onDataChange={loadData}
                 />
             </div>
         </AppLayout>

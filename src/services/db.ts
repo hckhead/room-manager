@@ -1,4 +1,4 @@
-import type { User, Room, Resident, Contract } from '../types';
+import type { User, Room, Resident, Contract, Payment, Expense } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
 const STORAGE_KEYS = {
@@ -6,6 +6,8 @@ const STORAGE_KEYS = {
     ROOMS: 'goshiwon_rooms',
     RESIDENTS: 'goshiwon_residents',
     CONTRACTS: 'goshiwon_contracts',
+    PAYMENTS: 'goshiwon_payments',
+    EXPENSES: 'goshiwon_expenses',
 };
 
 // Helper to get data
@@ -32,6 +34,7 @@ export const db = {
     },
     rooms: {
         getAll: (ownerId: string) => get<Room>(STORAGE_KEYS.ROOMS).filter(r => r.ownerId === ownerId),
+        get: (id: string) => get<Room>(STORAGE_KEYS.ROOMS).find(r => r.id === id),
         update: (room: Room) => {
             const rooms = get<Room>(STORAGE_KEYS.ROOMS);
             const index = rooms.findIndex(r => r.id === room.id);
@@ -54,26 +57,117 @@ export const db = {
             const newRoom = { ...room, id: uuidv4() };
             set(STORAGE_KEYS.ROOMS, [...rooms, newRoom]);
             return newRoom;
+        },
+        delete: (id: string) => {
+            const rooms = get<Room>(STORAGE_KEYS.ROOMS);
+            set(STORAGE_KEYS.ROOMS, rooms.filter(r => r.id !== id));
         }
     },
     contracts: {
         getActive: (roomId: string) => {
             return get<Contract>(STORAGE_KEYS.CONTRACTS).find(c => c.roomId === roomId && c.isActive);
         },
+        getAll: () => {
+            return get<Contract>(STORAGE_KEYS.CONTRACTS);
+        },
+        getByRoom: (roomId: string) => {
+            return get<Contract>(STORAGE_KEYS.CONTRACTS).filter(c => c.roomId === roomId);
+        },
+        getByResident: (residentId: string) => {
+            return get<Contract>(STORAGE_KEYS.CONTRACTS).filter(c => c.residentId === residentId);
+        },
         create: (contract: Omit<Contract, 'id'>) => {
             const contracts = get<Contract>(STORAGE_KEYS.CONTRACTS);
             const newContract = { ...contract, id: uuidv4() };
             set(STORAGE_KEYS.CONTRACTS, [...contracts, newContract]);
             return newContract;
+        },
+        update: (contract: Contract) => {
+            const contracts = get<Contract>(STORAGE_KEYS.CONTRACTS);
+            const index = contracts.findIndex(c => c.id === contract.id);
+            if (index >= 0) {
+                contracts[index] = contract;
+                set(STORAGE_KEYS.CONTRACTS, contracts);
+            }
+        },
+        delete: (id: string) => {
+            const contracts = get<Contract>(STORAGE_KEYS.CONTRACTS);
+            set(STORAGE_KEYS.CONTRACTS, contracts.filter(c => c.id !== id));
         }
     },
     residents: {
         get: (id: string) => get<Resident>(STORAGE_KEYS.RESIDENTS).find(r => r.id === id),
+        getAll: () => get<Resident>(STORAGE_KEYS.RESIDENTS),
         create: (resident: Omit<Resident, 'id'>) => {
             const residents = get<Resident>(STORAGE_KEYS.RESIDENTS);
             const newResident = { ...resident, id: uuidv4() };
             set(STORAGE_KEYS.RESIDENTS, [...residents, newResident]);
             return newResident;
+        },
+        update: (resident: Resident) => {
+            const residents = get<Resident>(STORAGE_KEYS.RESIDENTS);
+            const index = residents.findIndex(r => r.id === resident.id);
+            if (index >= 0) {
+                residents[index] = resident;
+                set(STORAGE_KEYS.RESIDENTS, residents);
+            }
+        },
+        delete: (id: string) => {
+            const residents = get<Resident>(STORAGE_KEYS.RESIDENTS);
+            set(STORAGE_KEYS.RESIDENTS, residents.filter(r => r.id !== id));
+        }
+    },
+    payments: {
+        getAll: () => get<Payment>(STORAGE_KEYS.PAYMENTS),
+        getByMonth: (month: string) => get<Payment>(STORAGE_KEYS.PAYMENTS).filter(p => p.month === month),
+        getByResident: (residentId: string) => get<Payment>(STORAGE_KEYS.PAYMENTS).filter(p => p.residentId === residentId),
+        getByContract: (contractId: string) => get<Payment>(STORAGE_KEYS.PAYMENTS).filter(p => p.contractId === contractId),
+        create: (payment: Omit<Payment, 'id'>) => {
+            const payments = get<Payment>(STORAGE_KEYS.PAYMENTS);
+            const newPayment = { ...payment, id: uuidv4() };
+            set(STORAGE_KEYS.PAYMENTS, [...payments, newPayment]);
+            return newPayment;
+        },
+        update: (payment: Payment) => {
+            const payments = get<Payment>(STORAGE_KEYS.PAYMENTS);
+            const index = payments.findIndex(p => p.id === payment.id);
+            if (index >= 0) {
+                payments[index] = payment;
+                set(STORAGE_KEYS.PAYMENTS, payments);
+            }
+        },
+        delete: (id: string) => {
+            const payments = get<Payment>(STORAGE_KEYS.PAYMENTS);
+            set(STORAGE_KEYS.PAYMENTS, payments.filter(p => p.id !== id));
+        }
+    },
+    expenses: {
+        getAll: () => get<Expense>(STORAGE_KEYS.EXPENSES),
+        getByDateRange: (start: string, end: string) => {
+            return get<Expense>(STORAGE_KEYS.EXPENSES).filter(e => {
+                return e.date >= start && e.date <= end;
+            });
+        },
+        getByCategory: (category: Expense['category']) => {
+            return get<Expense>(STORAGE_KEYS.EXPENSES).filter(e => e.category === category);
+        },
+        create: (expense: Omit<Expense, 'id'>) => {
+            const expenses = get<Expense>(STORAGE_KEYS.EXPENSES);
+            const newExpense = { ...expense, id: uuidv4() };
+            set(STORAGE_KEYS.EXPENSES, [...expenses, newExpense]);
+            return newExpense;
+        },
+        update: (expense: Expense) => {
+            const expenses = get<Expense>(STORAGE_KEYS.EXPENSES);
+            const index = expenses.findIndex(e => e.id === expense.id);
+            if (index >= 0) {
+                expenses[index] = expense;
+                set(STORAGE_KEYS.EXPENSES, expenses);
+            }
+        },
+        delete: (id: string) => {
+            const expenses = get<Expense>(STORAGE_KEYS.EXPENSES);
+            set(STORAGE_KEYS.EXPENSES, expenses.filter(e => e.id !== id));
         }
     },
     // Seed initial data for testing
