@@ -4,6 +4,7 @@ import { AppLayout } from '../components/layout/AppLayout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
 import { RoomDialog } from '../components/room/RoomDialog';
 import { db } from '../services/db';
 import type { Room, RoomStatus, RoomType } from '../types';
@@ -18,6 +19,8 @@ export default function Rooms() {
     const [typeFilter, setTypeFilter] = useState<string>('ALL');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
 
     useEffect(() => {
         loadRooms();
@@ -66,9 +69,16 @@ export default function Rooms() {
     };
 
     const handleDelete = (room: Room) => {
-        if (confirm(`${room.number}호를 삭제하시겠습니까?`)) {
-            db.rooms.delete(room.id);
+        setRoomToDelete(room);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (roomToDelete) {
+            db.rooms.delete(roomToDelete.id);
             loadRooms();
+            setDeleteDialogOpen(false);
+            setRoomToDelete(null);
         }
     };
 
@@ -206,6 +216,21 @@ export default function Rooms() {
                 onSave={handleSave}
                 ownerId={user?.id || ''}
             />
+
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>방 삭제 확인</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {roomToDelete?.number}호를 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDelete}>삭제</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }

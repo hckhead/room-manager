@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { AppLayout } from '../components/layout/AppLayout';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../components/ui/alert-dialog';
 import { ResidentDialog } from '../components/resident/ResidentDialog';
 import { db } from '../services/db';
 import type { Resident, Room, Contract } from '../types';
@@ -21,47 +22,41 @@ export default function Residents() {
     const [rooms, setRooms] = useState<Room[]>([]);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [residentToDelete, setResidentToDelete] = useState<ResidentWithRoom | null>(null);
 
+    // Load data when user changes
     useEffect(() => {
         loadData();
     }, [user]);
 
+    // Update filtered list when data or query changes
     useEffect(() => {
         filterResidents();
     }, [residents, searchQuery]);
 
     const loadData = () => {
         if (!user) return;
-
         const allRooms = db.rooms.getAll(user.id);
         setRooms(allRooms);
-
         const allResidents = db.residents.getAll();
-        const enrichedResidents: ResidentWithRoom[] = allResidents.map(resident => {
+        const enriched = allResidents.map(resident => {
             const contracts = db.contracts.getByResident(resident.id);
-            const activeContract = contracts.find(c => c.isActive);
-            const room = activeContract ? allRooms.find(r => r.id === activeContract.roomId) : undefined;
-
-            return {
-                ...resident,
-                room,
-                contract: activeContract
-            };
+            const active = contracts.find(c => c.isActive);
+            const room = active ? allRooms.find(r => r.id === active.roomId) : undefined;
+            return { ...resident, room, contract: active } as ResidentWithRoom;
         });
-
-        setResidents(enrichedResidents);
+        setResidents(enriched);
     };
 
     const filterResidents = () => {
         let filtered = [...residents];
-
         if (searchQuery) {
             filtered = filtered.filter(r =>
                 r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 r.phone.includes(searchQuery)
             );
         }
-
         setFilteredResidents(filtered);
     };
 
@@ -78,30 +73,18 @@ export default function Residents() {
         }
     ) => {
         let residentId: string;
-
         if ('id' in residentData) {
             db.residents.update(residentData as Resident);
             residentId = residentData.id;
         } else {
             const newResident = db.residents.create(residentData);
             residentId = newResident.id;
-
-            // Create contract if room is assigned
             if (contractData && contractData.roomId) {
-                db.contracts.create({
-                    ...contractData,
-                    residentId,
-                    isActive: true
-                });
-
-                // Update room status to OCCUPIED
+                db.contracts.create({ ...contractData, residentId, isActive: true });
                 const room = db.rooms.get(contractData.roomId);
-                if (room) {
-                    db.rooms.update({ ...room, status: 'OCCUPIED' });
-                }
+                if (room) db.rooms.update({ ...room, status: 'OCCUPIED' });
             }
         }
-
         loadData();
     };
 
@@ -111,22 +94,22 @@ export default function Residents() {
     };
 
     const handleDelete = (resident: ResidentWithRoom) => {
-        if (confirm(`${resident.name}님의 정보를 삭제하시겠습니까?`)) {
-            // Delete associated contracts
-            const contracts = db.contracts.getByResident(resident.id);
-            contracts.forEach(contract => {
-                db.contracts.delete(contract.id);
+        setResidentToDelete(resident);
+        setDeleteDialogOpen(true);
+    };
 
-                // Update room status back to VACANT
-                const room = db.rooms.get(contract.roomId);
-                if (room) {
-                    db.rooms.update({ ...room, status: 'VACANT' });
-                }
-            });
-
-            db.residents.delete(resident.id);
-            loadData();
-        }
+    const confirmDelete = () => {
+        if (!residentToDelete) return;
+        const contracts = db.contracts.getByResident(residentToDelete.id);
+        contracts.forEach(contract => {
+            db.contracts.delete(contract.id);
+            const room = db.rooms.get(contract.roomId);
+            if (room) db.rooms.update({ ...room, status: 'VACANT' });
+        });
+        db.residents.delete(residentToDelete.id);
+        loadData();
+        setDeleteDialogOpen(false);
+        setResidentToDelete(null);
     };
 
     const handleAddNew = () => {
@@ -144,7 +127,6 @@ export default function Residents() {
                         입실자 추가
                     </Button>
                 </div>
-
                 {/* Search */}
                 <div className="flex gap-4">
                     <div className="relative flex-1">
@@ -152,12 +134,11 @@ export default function Residents() {
                         <Input
                             placeholder="이름 또는 연락처 검색..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={e => setSearchQuery(e.target.value)}
                             className="pl-10"
                         />
                     </div>
                 </div>
-
                 {/* Table */}
                 <div className="border rounded-lg overflow-hidden">
                     <table className="w-full">
@@ -201,21 +182,31 @@ export default function Residents() {
                             ))}
                         </tbody>
                     </table>
-                    {filteredResidents.length === 0 && (
-                        <div className="text-center py-10 text-slate-500">
-                            입실자가 없습니다.
-                        </div>
-                    )}
                 </div>
+                {/* Resident Dialog */}
+                <ResidentDialog
+                    open={isDialogOpen}
+                    onOpenChange={setIsDialogOpen}
+                    resident={selectedResident}
+                    rooms={rooms}
+                    onSave={handleSave}
+                />
+                {/* Delete Confirmation Dialog */}
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>입실자 삭제 확인</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {residentToDelete?.name}님의 정보를 정말 삭제하시겠습니까? 관련된 계약도 모두 삭제됩니다. 이 작업은 복구할 수 없습니다.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>취소</AlertDialogCancel>
+                            <AlertDialogAction onClick={confirmDelete}>삭제</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
-
-            <ResidentDialog
-                open={isDialogOpen}
-                onOpenChange={setIsDialogOpen}
-                resident={selectedResident}
-                rooms={rooms}
-                onSave={handleSave}
-            />
         </AppLayout>
     );
 }
