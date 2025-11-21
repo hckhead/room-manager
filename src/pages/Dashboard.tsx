@@ -1,0 +1,110 @@
+import { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { RoomCanvas } from '../components/canvas/RoomCanvas';
+import { db } from '../services/db';
+import type { RoomWithContract } from '../types';
+import { Layout, Save, Plus } from 'lucide-react';
+import { AppLayout } from '../components/layout/AppLayout';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { RoomDetailSheet } from '../components/room/RoomDetailSheet';
+
+export default function Dashboard() {
+    const { user } = useAuth();
+    const [rooms, setRooms] = useState<RoomWithContract[]>([]);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [selectedRoom, setSelectedRoom] = useState<RoomWithContract | null>(null);
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            loadData();
+        }
+    }, [user]);
+
+    const loadData = () => {
+        if (!user) return;
+
+        const rawRooms = db.rooms.getAll(user.id);
+
+        const enrichedRooms: RoomWithContract[] = rawRooms.map(room => {
+            const contract = db.contracts.getActive(room.id);
+            const resident = contract ? db.residents.get(contract.residentId) : undefined;
+
+            return {
+                ...room,
+                currentContract: contract,
+                resident: resident
+            };
+        });
+
+        setRooms(enrichedRooms);
+    };
+
+    const handleRoomsChange = (newRooms: RoomWithContract[]) => {
+        setRooms(newRooms);
+    };
+
+    const handleRoomClick = (room: RoomWithContract) => {
+        if (isEditMode) return; // Don't open sheet in edit mode
+        setSelectedRoom(room);
+        setIsSheetOpen(true);
+    };
+
+    return (
+        <AppLayout>
+            <div className="flex flex-col space-y-6">
+                {/* Toolbar */}
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">방 현황판</h1>
+                        <div className="flex gap-2">
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">입실중 {rooms.filter(r => r.status === 'OCCUPIED').length}</Badge>
+                            <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">공실 {rooms.filter(r => r.status === 'VACANT').length}</Badge>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {isEditMode && (
+                            <Button variant="outline" size="sm">
+                                <Plus className="w-4 h-4 mr-2" />
+                                방 추가
+                            </Button>
+                        )}
+                        <Button
+                            variant={isEditMode ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setIsEditMode(!isEditMode)}
+                        >
+                            {isEditMode ? (
+                                <>
+                                    <Save className="w-4 h-4 mr-2" />
+                                    배치 저장
+                                </>
+                            ) : (
+                                <>
+                                    <Layout className="w-4 h-4 mr-2" />
+                                    배치 수정
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Canvas */}
+                <RoomCanvas
+                    rooms={rooms}
+                    onRoomsChange={handleRoomsChange}
+                    isEditMode={isEditMode}
+                    onRoomClick={handleRoomClick}
+                />
+
+                <RoomDetailSheet
+                    room={selectedRoom}
+                    open={isSheetOpen}
+                    onOpenChange={setIsSheetOpen}
+                />
+            </div>
+        </AppLayout>
+    );
+}
