@@ -4,7 +4,12 @@ import { LayoutDashboard, BedDouble, Users, TrendingUp, LogOut } from 'lucide-re
 import { Button } from '../ui/button';
 import { useAuth } from '../../context/AuthContext';
 
-export function Sidebar() {
+interface SidebarProps {
+    className?: string;
+    onNavigate?: () => void;
+}
+
+export function Sidebar({ className, onNavigate }: SidebarProps) {
     const { logout } = useAuth();
 
     const navItems = [
@@ -15,7 +20,7 @@ export function Sidebar() {
     ];
 
     return (
-        <div className="h-screen w-64 bg-slate-900 text-white flex flex-col border-r border-slate-800">
+        <div className={cn("h-full bg-slate-900 text-white flex flex-col border-r border-slate-800", className)}>
             <div className="p-6">
                 <h1 className="text-xl font-bold tracking-tight">Room Manager</h1>
                 <p className="text-xs text-slate-400 mt-1">Enterprise Edition</p>
@@ -26,6 +31,7 @@ export function Sidebar() {
                     <NavLink
                         key={item.to}
                         to={item.to}
+                        onClick={onNavigate}
                         className={({ isActive }) =>
                             cn(
                                 "flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors",
