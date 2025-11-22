@@ -160,7 +160,7 @@ export function RoomCanvas({ rooms, onRoomsChange, isEditMode, onRoomClick, sele
             className="relative w-full bg-slate-100/50 rounded-xl border border-slate-200 overflow-auto shadow-inner"
             style={{ height: selectedFloor === 'ALL' ? 'auto' : '800px', maxHeight: '800px' }}
         >
-            <div style={{ height: totalHeight, position: 'relative' }}>
+            <div style={{ height: totalHeight, width: CANVAS_WIDTH, position: 'relative' }}>
                 {/* Grid background for visual guide */}
                 <div
                     className="absolute inset-0 pointer-events-none opacity-10"

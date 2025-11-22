@@ -34,21 +34,53 @@ export function RoomDetailSheet({ room, open, onOpenChange, onDataChange }: Room
     if (!room) return null;
 
     const handleSave = () => {
-        // Save resident data
-        if (room.resident && residentData.id) {
-            db.residents.update({
-                ...room.resident,
-                ...residentData,
-                memo
-            } as Resident);
+        let currentResidentId = room.resident?.id;
+
+        // 1. Handle Resident
+        if (residentData.name) {
+            if (room.resident) {
+                db.residents.update({
+                    ...room.resident,
+                    ...residentData,
+                    memo
+                } as Resident);
+            } else {
+                // Create new resident
+                const newResident = db.residents.create({
+                    name: residentData.name,
+                    phone: residentData.phone || '',
+                    emergencyPhone: residentData.emergencyPhone || '',
+                    memo: memo,
+                });
+                currentResidentId = newResident.id;
+            }
         }
 
-        // Save contract data
-        if (room.currentContract && contractData.id) {
+        // 2. Handle Contract
+        if (room.currentContract) {
             db.contracts.update({
                 ...room.currentContract,
                 ...contractData
             } as Contract);
+        } else if (currentResidentId && (contractData.rent !== undefined || contractData.deposit !== undefined)) {
+            // Create new contract
+            db.contracts.create({
+                roomId: room.id,
+                residentId: currentResidentId,
+                deposit: contractData.deposit || 0,
+                rent: contractData.rent || 0,
+                managementFee: 0, // Default
+                startDate: contractData.startDate || new Date().toISOString().split('T')[0],
+                endDate: contractData.endDate || '',
+                paymentDay: contractData.paymentDay || 1,
+                isActive: true
+            });
+
+            // Update room status to OCCUPIED
+            db.rooms.update({
+                ...room,
+                status: 'OCCUPIED'
+            });
         }
 
         setIsEditMode(false);
@@ -149,7 +181,7 @@ export function RoomDetailSheet({ room, open, onOpenChange, onDataChange }: Room
                         </TabsContent>
 
                         <TabsContent value="contract" className="space-y-4 mt-4">
-                            {room.currentContract ? (
+                            {room.currentContract || isEditMode ? (
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
@@ -160,7 +192,7 @@ export function RoomDetailSheet({ room, open, onOpenChange, onDataChange }: Room
                                                     onChange={(value) => setContractData({ ...contractData, deposit: value })}
                                                 />
                                             ) : (
-                                                <div className="text-lg font-semibold">{room.currentContract.deposit.toLocaleString()}원</div>
+                                                <div className="text-lg font-semibold">{room.currentContract?.deposit.toLocaleString()}원</div>
                                             )}
                                         </div>
                                         <div className="space-y-2">
@@ -171,7 +203,7 @@ export function RoomDetailSheet({ room, open, onOpenChange, onDataChange }: Room
                                                     onChange={(value) => setContractData({ ...contractData, rent: value })}
                                                 />
                                             ) : (
-                                                <div className="text-lg font-semibold">{room.currentContract.rent.toLocaleString()}원</div>
+                                                <div className="text-lg font-semibold">{room.currentContract?.rent.toLocaleString()}원</div>
                                             )}
                                         </div>
                                     </div>
@@ -187,7 +219,7 @@ export function RoomDetailSheet({ room, open, onOpenChange, onDataChange }: Room
                                         ) : (
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Calendar className="w-4 h-4" />
-                                                {room.currentContract.startDate}
+                                                {room.currentContract?.startDate}
                                             </div>
                                         )}
                                     </div>
@@ -202,7 +234,7 @@ export function RoomDetailSheet({ room, open, onOpenChange, onDataChange }: Room
                                         ) : (
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Calendar className="w-4 h-4" />
-                                                {room.currentContract.endDate}
+                                                {room.currentContract?.endDate}
                                             </div>
                                         )}
                                     </div>
@@ -219,7 +251,7 @@ export function RoomDetailSheet({ room, open, onOpenChange, onDataChange }: Room
                                         ) : (
                                             <div className="flex items-center gap-2 text-sm">
                                                 <CreditCard className="w-4 h-4" />
-                                                매월 {room.currentContract.paymentDay}일
+                                                매월 {room.currentContract?.paymentDay}일
                                             </div>
                                         )}
                                     </div>
@@ -227,6 +259,8 @@ export function RoomDetailSheet({ room, open, onOpenChange, onDataChange }: Room
                             ) : (
                                 <div className="text-center py-10 text-slate-500">
                                     진행 중인 계약이 없습니다.
+                                    <br />
+                                    <span className="text-sm">수정 버튼을 눌러 계약을 등록하세요.</span>
                                 </div>
                             )}
                         </TabsContent>

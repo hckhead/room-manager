@@ -170,6 +170,28 @@ export const db = {
             set(STORAGE_KEYS.EXPENSES, expenses.filter(e => e.id !== id));
         }
     },
+    // Backup all data
+    backup: () => {
+        const data: Record<string, any> = {};
+        Object.values(STORAGE_KEYS).forEach(key => {
+            data[key] = get(key);
+        });
+        return data;
+    },
+    // Restore data
+    restore: (data: Record<string, any>) => {
+        try {
+            Object.values(STORAGE_KEYS).forEach(key => {
+                if (data[key]) {
+                    set(key, data[key]);
+                }
+            });
+            return true;
+        } catch (error) {
+            console.error('Failed to restore data:', error);
+            return false;
+        }
+    },
     // Seed initial data for testing
     seed: () => {
         if (get(STORAGE_KEYS.USERS).length === 0) {
@@ -177,7 +199,7 @@ export const db = {
             set(STORAGE_KEYS.USERS, [demoUser]);
 
             // Create some demo rooms
-            const demoRooms: Room[] = Array.from({ length: 15 }).map((_, i) => ({
+            const demoRooms: Room[] = Array.from({ length: 6 }).map((_, i) => ({
                 id: uuidv4(),
                 ownerId: 'demo-user-id',
                 number: `${201 + i}`,
@@ -185,10 +207,10 @@ export const db = {
                 type: i % 3 === 0 ? 'EN_SUITE' : 'WINDOW',
                 status: i === 0 ? 'OCCUPIED' : i === 1 ? 'LEAVING_SOON' : 'VACANT',
                 basePrice: 350000 + (i * 10000),
-                x: (i % 5) * 220 + 20, // Initial layout
-                y: Math.floor(i / 5) * 140 + 20,
-                positionX: i % 4,
-                positionY: Math.floor(i / 4)
+                x: (i % 3) * 220 + 20, // Reduced to 3 per row for better mobile view
+                y: Math.floor(i / 3) * 140 + 20,
+                positionX: i % 3,
+                positionY: Math.floor(i / 3)
             }));
             set(STORAGE_KEYS.ROOMS, demoRooms);
         }
