@@ -5,16 +5,13 @@ import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 import { Menu, Download, Upload } from 'lucide-react';
 import { Button } from '../ui/button';
 import { db } from '../../services/db';
-import { useLocation } from 'react-router-dom';
 
 interface AppLayoutProps {
     children: React.ReactNode;
-    title?: string;
 }
 
-export function AppLayout({ children, title }: AppLayoutProps) {
+export function AppLayout({ children }: AppLayoutProps) {
     const [open, setOpen] = useState(false);
-    const location = useLocation();
 
     // Get room statistics
     const getRoomStats = () => {

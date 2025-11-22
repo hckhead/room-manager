@@ -6,7 +6,6 @@ import { type RoomWithContract } from '../types';
 import { Layout, Save, Plus } from 'lucide-react';
 import { AppLayout } from '../components/layout/AppLayout';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { RoomDetailSheet } from '../components/room/RoomDetailSheet';
 
@@ -89,14 +88,9 @@ export default function Dashboard() {
             <div className="flex flex-col space-y-6">
                 {/* Toolbar */}
                 <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">방 현황판</h1>
-                        <div className="flex gap-2">
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">입실중 {filteredRooms.filter(r => r.status === 'OCCUPIED').length}</Badge>
-                            <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">공실 {filteredRooms.filter(r => r.status === 'VACANT').length}</Badge>
-                        </div>
+                    <div className="flex items-center gap-3">
                         <Select value={selectedFloor} onValueChange={setSelectedFloor}>
-                            <SelectTrigger className="w-[120px]">
+                            <SelectTrigger className="w-[140px]">
                                 <SelectValue placeholder="층 선택" />
                             </SelectTrigger>
                             <SelectContent>

@@ -198,20 +198,48 @@ export const db = {
             const demoUser = { id: 'demo-user-id', username: 'admin', name: '홍길동', role: 'ADMIN' as const };
             set(STORAGE_KEYS.USERS, [demoUser]);
 
-            // Create some demo rooms
-            const demoRooms: Room[] = Array.from({ length: 6 }).map((_, i) => ({
-                id: uuidv4(),
-                ownerId: 'demo-user-id',
-                number: `${201 + i}`,
-                floor: 2,
-                type: i % 3 === 0 ? 'EN_SUITE' : 'WINDOW',
-                status: i === 0 ? 'OCCUPIED' : i === 1 ? 'LEAVING_SOON' : 'VACANT',
-                basePrice: 350000 + (i * 10000),
-                x: (i % 3) * 220 + 20, // Reduced to 3 per row for better mobile view
-                y: Math.floor(i / 3) * 140 + 20,
-                positionX: i % 3,
-                positionY: Math.floor(i / 3)
-            }));
+            // Create some demo rooms - only 3 for clean initial view
+            const demoRooms: Room[] = [
+                {
+                    id: uuidv4(),
+                    ownerId: 'demo-user-id',
+                    number: '201',
+                    floor: 2,
+                    type: 'EN_SUITE',
+                    status: 'OCCUPIED',
+                    basePrice: 350000,
+                    x: 20,
+                    y: 20,
+                    positionX: 0,
+                    positionY: 0
+                },
+                {
+                    id: uuidv4(),
+                    ownerId: 'demo-user-id',
+                    number: '202',
+                    floor: 2,
+                    type: 'WINDOW',
+                    status: 'VACANT',
+                    basePrice: 360000,
+                    x: 240,
+                    y: 20,
+                    positionX: 1,
+                    positionY: 0
+                },
+                {
+                    id: uuidv4(),
+                    ownerId: 'demo-user-id',
+                    number: '203',
+                    floor: 2,
+                    type: 'WINDOW',
+                    status: 'VACANT',
+                    basePrice: 370000,
+                    x: 460,
+                    y: 20,
+                    positionX: 2,
+                    positionY: 0
+                }
+            ];
             set(STORAGE_KEYS.ROOMS, demoRooms);
         }
     }
