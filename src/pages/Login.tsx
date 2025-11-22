@@ -14,7 +14,7 @@ export default function Login() {
         if (success) {
             navigate('/');
         } else {
-            setError('사용자를 찾을 수 없습니다. (Demo: admin 입력)');
+            setError('사용자를 찾을 수 없습니다.');
         }
     };
 
@@ -30,7 +30,6 @@ export default function Login() {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 border p-2"
-                            placeholder="admin"
                         />
                     </div>
                     {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -41,9 +40,6 @@ export default function Login() {
                         로그인
                     </button>
                 </form>
-                <div className="mt-4 text-center text-sm text-gray-500">
-                    <p>Demo Account: <strong>admin</strong></p>
-                </div>
             </div>
         </div>
     );

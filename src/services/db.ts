@@ -195,7 +195,7 @@ export const db = {
     // Seed initial data for testing
     seed: () => {
         if (get(STORAGE_KEYS.USERS).length === 0) {
-            const demoUser = { id: 'demo-user-id', username: 'admin', name: '홍길동', role: 'ADMIN' as const };
+            const demoUser = { id: 'demo-user-id', username: 'admin123', name: '관리자', role: 'ADMIN' as const };
             set(STORAGE_KEYS.USERS, [demoUser]);
 
             // Create some demo rooms - only 3 for clean initial view
